@@ -1,0 +1,45 @@
+# .github/workflows/deploy-to-firebase.yml
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main # main 브랜치에 코드가 푸시될 때 워크플로우 실행
+  pull_request:
+    branches:
+      - main # main 브랜치로 PR이 생성/업데이트 될 때 실행 (주로 CI 단계)
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest # GitHub Actions가 실행될 환경 지정 (최신 우분투 리눅스)
+
+    steps:
+      - name: Checkout Code # 저장소 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js # Node.js 환경 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # 프로젝트에서 사용하는 Node.js 버전으로 변경해주세요 (예: '18', '20')
+          cache: 'npm' # npm 캐싱 설정 (빌드 속도 향상)
+
+      - name: Install Dependencies # 프로젝트 의존성 설치
+        run: npm install # 또는 'yarn install' (프로젝트에서 yarn을 사용한다면)
+
+      - name: Build Project # 프로젝트 빌드
+        run: npm run build # React, Vue 등 프론트엔드 프로젝트 빌드 명령어
+
+      # TODO: 테스트 단계 추가 (선택 사항이지만 강력 권장)
+      # - name: Run Tests
+      #   run: npm test # 또는 'yarn test'
+
+      - name: Deploy to Firebase Hosting # Firebase Hosting으로 배포
+        # main 브랜치에 대한 푸시 이벤트일 때만 배포 실행
+        if: github.ref == 'refs/heads/main'
+        uses: FirebaseExtended/action-hosting-deploy@v0 # Firebase Hosting 배포를 위한 GitHub Action
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}' # GitHub 저장소 기본 토큰 (PR 상태 업데이트 등에 사용)
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_TOKEN }}' # GitHub Secrets에 저장된 Firebase 서비스 계정 키
+          channelId: live # 배포할 Firebase Hosting 채널 (기본적으로 'live'는 프로덕션 채널)
+          projectId: nanotollpro-new # IMPORTANT: 여기에 실제 Firebase 프로젝트 ID를 입력해주세요!
+          # 참고: firebase.json 파일에 설정된 프로젝트 ID와 동일해야 합니다.
